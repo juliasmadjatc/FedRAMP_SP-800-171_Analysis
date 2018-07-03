@@ -1,0 +1,24 @@
+---
+title: "800-171 Analysis"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readxl)
+library(readr)
+library(tidyverse)
+library(ggplot2)
+library(igraph)
+library(dplyr)
+```  
+  
+```{r}
+Security_Requirements <- read_excel("Desktop/GitHub/FedRAMP_SP-800-171_Analysis/800-171 Appendix D.xlsx")
+head(Security_Requirements)
+```
+
