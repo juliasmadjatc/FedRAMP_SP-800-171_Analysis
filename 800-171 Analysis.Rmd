@@ -16,9 +16,116 @@ library(ggplot2)
 library(igraph)
 library(dplyr)
 ```  
-  
+
+Loading the SP-800-171 excel file into R for analysis. 
 ```{r}
-Security_Requirements <- read_excel("Desktop/GitHub/FedRAMP_SP-800-171_Analysis/800-171 Appendix D.xlsx")
+Security_Requirements <- read_excel("800-171 Appendix D.xlsx") #Julia Smadja's working directory, what's in quotation marks must changed
 head(Security_Requirements)
 ```
+
+```{r}
+Security_Requirements <- Security_Requirements %>%
+  select(`SR_Family` = `SR Family`, 
+         `SR_Family_Name` = `SR Family Name`, 
+         `Type_of_SR` = `Type of SR`, 
+         `SP_800-171` = `SP 800-171`,
+         `SP_800-171_SR` = `SP 800-171 SR`,
+         `NIST_SP_800-53` = `NIST SP 800-53`, 
+         `NIST_SP_800-53_Relevant_Security_Controls` = `NIST SP 800-53 Relevant Security Controls`,
+         `ISO/IEC_27001_Relevant_Security_Controls` = `ISO/IEC 27001 Relevant Security Controls`) #renaming variables so there is no space
+  
+SR <- Security_Requirements %>%
+  select(SR_Family, SR_Family_Name, `SP_800-171`, `NIST_SP_800-53`) %>%
+  distinct()
+
+#View(SR)
+```
+
+#Analysis 
+
+**Number of Security Requirement Families for SP-171 and their names?**
+```{r}
+count_SR_Family <- SR %>%
+  summarise(count_SR_Family = n_distinct(SR_Family))
+
+count_SR_Family
+
+names_SR_Family <- SR %>%
+  group_by(SR_Family, SR_Family_Name) %>%
+  summarise()
+
+names_SR_Family
+```
+
+**Number of Security Requirement for SP-171 and their "names"?**
+```{r}
+count_SR <- SR %>%
+  summarise(count_SR = n_distinct(`SP_800-171`))
+
+count_SR
+
+names_SR <- SR %>%
+  group_by(`SP_800-171`) %>%
+  summarise()
+
+names_SR
+```
+
+**Security Requirement families with the most number of security requirements (SP 800-171)?**
+```{r}
+CountSRFamily_SR <- SR %>%
+  group_by(SR_Family) %>%
+  summarise(count_of_SP_800_171 = n_distinct(SR_Family, `SP_800-171`)) %>%
+  arrange(desc(count_of_SP_800_171 ))
+
+CountSRFamily_SR
+```
+   
+      
+**Security Requirement (SP 800-171) by Security Requirement Family with the most number of security controls (SP 800-53)?**
+```{r}
+#CountSRFamily_SR_SC <- SR %>%
+#  group_by(SR_Family, `SP_800-171`) %>%
+#  summarise(count_of_SP_800_53 = n_distinct(SR_Family, `SP_800-171`,`NIST_SP_800-53`)) %>%
+#  arrange(desc(count_of_SP_800_53))
+
+#CountSRFamily_SR_SC
+```   
+Doesnt matter since by distinguishing by SP 800-171 it already distinguishes by family      
+        
+**Security Requirement (SP 800-171) with the most number of security controls (SP 800-53) and the names of those security controls?**
+```{r}
+SR
+CountSR_SC <- SR %>%
+  group_by(`SP_800-171`, `NIST_SP_800-53`) %>%
+  #group_by_at(vars(-`NIST_SP_800-53`)) %>% #group by everything other than the value column 
+  mutate(row_id = 1:n()) %>% ungroup() %>% #build group index 
+  spread(key = `SP_800-171`, value = `NIST_SP_800-53`) %>% #spread
+  select(-row_id) #drop the index
+
+CountSR_SC
+
+CountSR_SC <- SR %>%
+  group_by(`SP_800-171`) %>%
+  #summarize(`NIST_SP_800-53` = paste(sort(unique(`NIST_SP_800-53`)),collapse=", ")) %>%
+  summarise(count_of_SP_800_53 = n_distinct(`SP_800-171`,`NIST_SP_800-53`)) %>%
+  arrange(desc(count_of_SP_800_53)) 
+#df %>% group_by(group) %>% 
+  
+
+CountSR_SC
+
+#VISUAL
+VisualSR_SC <- CountSR_SC %>%
+  filter(count_of_SP_800_53 >= 3) %>%
+  ggplot(aes(reorder(`SP_800-171`, -count_of_SP_800_53), count_of_SP_800_53)) +
+    geom_bar(stat = "identity") 
+             fill = `NIST_SP_800-53`) 
+    #ggtitle("Largest Amount of Related Controls for each Control") +
+    #xlab("Top 11 Controls") + 
+    #ylab("Number of Related Controls")
+
+VisualSR_SC
+```    
+
 
