@@ -1,11 +1,9 @@
 ---
 title: "800-171 Analysis"
-output: pdf_document
+output: 
+  pdf_document: 
+    latex_engine: xelatex
 ---
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -15,117 +13,210 @@ library(tidyverse)
 library(ggplot2)
 library(igraph)
 library(dplyr)
-```  
+```     
+   
+##Data Loading
 
 Loading the SP-800-171 excel file into R for analysis. 
 ```{r}
-Security_Requirements <- read_excel("800-171 Appendix D.xlsx") #Julia Smadja's working directory, what's in quotation marks must changed
+#Julia Smadja's working directory, what's in quotation marks must changed
+Security_Requirements <- read_excel("800-171 Appendix D.xlsx") 
 head(Security_Requirements)
-```
-
+```   
+    
+        
+##Data Cleaning
+   
+   
 ```{r}
 Security_Requirements <- Security_Requirements %>%
+  #renaming variables so there is no space
   select(`SR_Family` = `SR Family`, 
          `SR_Family_Name` = `SR Family Name`, 
          `Type_of_SR` = `Type of SR`, 
          `SP_800-171` = `SP 800-171`,
          `SP_800-171_SR` = `SP 800-171 SR`,
+         `800-53_Family` = `800-53 Family`,
          `NIST_SP_800-53` = `NIST SP 800-53`, 
          `NIST_SP_800-53_Relevant_Security_Controls` = `NIST SP 800-53 Relevant Security Controls`,
-         `ISO/IEC_27001_Relevant_Security_Controls` = `ISO/IEC 27001 Relevant Security Controls`) #renaming variables so there is no space
+         `ISO/IEC_27001_Relevant_Security_Controls` = `ISO/IEC 27001 Relevant Security Controls`) 
   
-SR <- Security_Requirements %>%
-  select(SR_Family, SR_Family_Name, `SP_800-171`, `NIST_SP_800-53`) %>%
+  
+`SP_800-171 Cleaned` <- Security_Requirements %>%
+  select(SR_Family, SR_Family_Name, `SP_800-171`, `800-53_Family`, `NIST_SP_800-53`) %>%
   distinct()
 
-#View(SR)
+head(`SP_800-171 Cleaned`)
+#View(`SP_800-171 Cleaned`)
 ```
+     
+     
+#Data Analysis    
+  
+The purpose of this analysis is to understand the different security requirements (SP 800-171) and their families and their relationships with the security controls in NIST Special Publication 800-53. An additional visual analysis is done using Tableau for ease of interpretation. 
 
-#Analysis 
-
-**Number of Security Requirement Families for SP-171 and their names?**
+**Number of Security Requirement Families for SP-171 and their names?**    
+    
 ```{r}
-count_SR_Family <- SR %>%
-  summarise(count_SR_Family = n_distinct(SR_Family))
+Count_SRFamily <- `SP_800-171 Cleaned` %>%
+  summarise(count_SRFamily = n_distinct(SR_Family))
 
-count_SR_Family
+head(Count_SRFamily)
 
-names_SR_Family <- SR %>%
+Names_SRFamily <- `SP_800-171 Cleaned` %>%
   group_by(SR_Family, SR_Family_Name) %>%
   summarise()
 
-names_SR_Family
+head(Names_SRFamily)
 ```
+    
+There are 14 security requirement families to protect the confidentiality of CUI in nonfederal systems and organizations.  
 
-**Number of Security Requirement for SP-171 and their "names"?**
+As the analysis moves forward, the analysis dives deeper into the security requirements, how many there are and how they are related to their families.
+   
+**Number of Security Requirement for SP-171 and their "names"?**    
+    
 ```{r}
-count_SR <- SR %>%
+Count_SR <- `SP_800-171 Cleaned` %>%
   summarise(count_SR = n_distinct(`SP_800-171`))
 
-count_SR
+head(Count_SR)
 
-names_SR <- SR %>%
+Names_SR <- `SP_800-171 Cleaned` %>%
   group_by(`SP_800-171`) %>%
   summarise()
 
-names_SR
-```
-
-**Security Requirement families with the most number of security requirements (SP 800-171)?**
+head(Names_SR)
+```   
+    
+There is a total of 110 security requirements within those families. 
+   
+**Security Requirement families with the number of security requirements (SP 800-171)?**   
+     
 ```{r}
-CountSRFamily_SR <- SR %>%
+Count_SRFamily_SR <- `SP_800-171 Cleaned` %>%
   group_by(SR_Family) %>%
   summarise(count_of_SP_800_171 = n_distinct(SR_Family, `SP_800-171`)) %>%
   arrange(desc(count_of_SP_800_171 ))
 
-CountSRFamily_SR
-```
+head(Count_SRFamily_SR)  
+   
+Names_SRFamily_SR <- `SP_800-171 Cleaned` %>%
+  group_by(SR_Family) %>%
+  summarise(names_of_SP_800_171 = toString(`SP_800-171`)) %>%
+  ungroup()
+
+head(Names_SRFamily_SR)
+```    
+   
+From the 110 security requirements, the analysis looks into how they are grouped within each security family. The security requirement family with the largest amount of security requirements is 3.01 (ACCESS CONTROL) with 22, followed by 3.13 (SYSTEM AND COMMUNICATIONS PROTECTION) with 16 and 3.05 (IDENTIFICATION AND AUTHENTICATION) with 11.    
+   
+The next steps in the analysis is to add the NIST 800-53 and understand the mapping of the security requirements to the relevant security controls (NIST 800-53).
    
       
-**Security Requirement (SP 800-171) by Security Requirement Family with the most number of security controls (SP 800-53)?**
+**Security Requirement Families(SP 800-171) with the number of security control families (SP 800-53) and the names of those security control families.**    
+      
 ```{r}
-#CountSRFamily_SR_SC <- SR %>%
-#  group_by(SR_Family, `SP_800-171`) %>%
-#  summarise(count_of_SP_800_53 = n_distinct(SR_Family, `SP_800-171`,`NIST_SP_800-53`)) %>%
-#  arrange(desc(count_of_SP_800_53))
+Count_SRFamily_SCFamily <- `SP_800-171 Cleaned` %>%
+  group_by(SR_Family) %>%
+  summarise(count_of_SP_800_53Families = n_distinct(`800-53_Family`)) %>%
+  arrange(desc(count_of_SP_800_53Families))
 
-#CountSRFamily_SR_SC
-```   
-Doesnt matter since by distinguishing by SP 800-171 it already distinguishes by family      
-        
-**Security Requirement (SP 800-171) with the most number of security controls (SP 800-53) and the names of those security controls?**
+Count_SRFamily_SCFamily
+
+Names_SRFamily_SCFamily <- `SP_800-171 Cleaned` %>%
+  group_by(SR_Family) %>%
+  summarise(names_of_SP_800_53Families = toString(unique(`800-53_Family`))) %>%
+  ungroup()
+
+head(Names_SRFamily_SCFamily)
+```      
+   
+Within the security requirement families there are only three families that have 2 security control families, 3.08, 3.12 and 3.13. All the other families only have one security control family. 3.08 has CP and MP, 3.12 has CA and PL, and 3.13 has SA and SC. 
+    
+**Security Requirement Families (SP 800-171) with the number of security controls (SP 800-53) and the names of those security controls.**    
+      
 ```{r}
-SR
-CountSR_SC <- SR %>%
-  group_by(`SP_800-171`, `NIST_SP_800-53`) %>%
-  #group_by_at(vars(-`NIST_SP_800-53`)) %>% #group by everything other than the value column 
-  mutate(row_id = 1:n()) %>% ungroup() %>% #build group index 
-  spread(key = `SP_800-171`, value = `NIST_SP_800-53`) %>% #spread
-  select(-row_id) #drop the index
+Count_SRFamily_SC <- `SP_800-171 Cleaned` %>%
+  group_by(SR_Family) %>%
+  summarise(count_of_SP_800_53 = n_distinct(`NIST_SP_800-53`)) %>%
+  arrange(desc(count_of_SP_800_53))
 
-CountSR_SC
+Count_SRFamily_SC
 
-CountSR_SC <- SR %>%
+Names_SRFamily_SC <- `SP_800-171 Cleaned` %>%
+  group_by(SR_Family) %>%
+  summarise(names_of_SP_800_53 = toString(unique(`NIST_SP_800-53`))) %>%
+  ungroup()
+
+head(Names_SRFamily_SC)
+```      
+   
+Within the Security Requirement families, 3.01 has the largest amount of security controls with 28, followed by 3.13 with 16, 3.03 with 14, 3.04 with 13 and 3.05 with 11. 
+     
+**Security Requirement (SP 800-171) with the number of security control families (SP 800-53) and the names of those security control families.**   
+       
+```{r}
+Count_SR_SCFamily <- `SP_800-171 Cleaned` %>%
   group_by(`SP_800-171`) %>%
-  #summarize(`NIST_SP_800-53` = paste(sort(unique(`NIST_SP_800-53`)),collapse=", ")) %>%
+  summarise(count_of_SP_800_53Families = n_distinct(`SP_800-171`, `800-53_Family`)) %>%
+  arrange(desc(count_of_SP_800_53Families))
+
+head(Count_SR_SCFamily)
+
+Names_SR_SCFamily <- `SP_800-171 Cleaned` %>%
+  group_by(`SP_800-171`) %>%
+  summarise(names_of_SP_800_53Families = toString(unique(`800-53_Family`))) %>%
+  ungroup()
+
+head(Names_SR_SCFamily)
+```        
+       
+There are 6 security requirements that have 2 different security controls, 3.12.1, 3.12.2, 3.12.3, 3.12.4, 3.13.1 and 3.13.2. 
+           
+           
+**Security Requirement (SP 800-171) with the number of security controls (SP 800-53) and the names of those security controls?**   
+   
+```{r}
+Count_SR_SC <- `SP_800-171 Cleaned` %>%
+  group_by(`SP_800-171`) %>%
   summarise(count_of_SP_800_53 = n_distinct(`SP_800-171`,`NIST_SP_800-53`)) %>%
-  arrange(desc(count_of_SP_800_53)) 
-#df %>% group_by(group) %>% 
-  
+  arrange(desc(count_of_SP_800_53))
 
-CountSR_SC
+head(Count_SR_SC)
 
-#VISUAL
-VisualSR_SC <- CountSR_SC %>%
-  filter(count_of_SP_800_53 >= 3) %>%
-  ggplot(aes(reorder(`SP_800-171`, -count_of_SP_800_53), count_of_SP_800_53)) +
-    geom_bar(stat = "identity") 
-             fill = `NIST_SP_800-53`) 
-    #ggtitle("Largest Amount of Related Controls for each Control") +
-    #xlab("Top 11 Controls") + 
-    #ylab("Number of Related Controls")
+Names_SR_SC <- `SP_800-171 Cleaned` %>%
+  group_by(`SP_800-171`) %>%
+  summarise(names_of_SP_800_53 = toString(`NIST_SP_800-53`)) %>%
+  ungroup()
 
-VisualSR_SC
-```    
+head(Names_SR_SC)
+```     
+   
+The security requirements with the most number of security controls are 3.3.1 with 6 and 3.3.2 with 6, followd by 3.6.1 with 5 and 3.6.2 with 5.   
+   
+##Exporting Data 
+    
+```{r}
+write_csv(`SP_800-171 Cleaned`, "SP_800-171 Cleaned.csv")
+write_csv(`Names_SRFamily`, "Names_SRFamily.csv")
+write_csv(`Names_SR`, "Names_SR.csv")
+write_csv(`Count_SRFamily_SR`, "Count_SRFamily_SR.csv")
+write_csv(`Names_SRFamily_SR`, "Names_SRFamily_SR.csv")
+write_csv(`Count_SRFamily_SCFamily`, "Count_SRFamily_SCFamily.csv")
+write_csv(`Names_SRFamily_SCFamily`, "Names_SRFamily_SCFamily.csv")
+write_csv(`Count_SRFamily_SC`, "Count_SRFamily_SC.csv")
+write_csv(`Names_SRFamily_SC`, "Names_SRFamily_SC.csv")
+write_csv(`Count_SR_SCFamily`, "Count_SR_SCFamily.csv")
+write_csv(`Names_SR_SCFamily`, "Names_SR_SCFamily.csv")
+write_csv(`Count_SR_SC`, "Count_SR_SC.csv")
+write_csv(`Names_SR_SC`, "Names_SR_SC.csv")
+```
+
+After exporting these excel files, combine these 13 different excel workbooks into the same workbook, SP 800-171 Analysis, with 13 different worksheets.    
+Combine the Count_SR_SC and Names_SR_SC into the same sheet and Count_SRFamily_SR and Names_SRFamily_SR. 
+Add the original SP 800-171 data set to the workbook, SP 800-171 Analysis.   
+   
+A visual analysis is done with Tableau. 
 
 
