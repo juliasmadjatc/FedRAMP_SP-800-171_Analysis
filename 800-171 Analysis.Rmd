@@ -14,7 +14,10 @@ library(ggplot2)
 library(igraph)
 library(dplyr)
 ```     
-   
+ 
+
+#Basic Analysis 
+  
 ##Data Loading
 
 Loading the SP-800-171 excel file into R for analysis. 
@@ -114,7 +117,7 @@ From the 110 security requirements, the analysis looks into how they are grouped
 The next steps in the analysis is to add the NIST 800-53 and understand the mapping of the security requirements to the relevant security controls (NIST 800-53).
    
       
-**Security Requirement Families(SP 800-171) with the number of security control families (SP 800-53) and the names of those security control families.**    
+**Security Requirement Families (SP 800-171) with the number of security control families (SP 800-53) and the names of those security control families.**    
       
 ```{r}
 Count_SRFamily_SCFamily <- `SP_800-171 Cleaned` %>%
@@ -218,5 +221,104 @@ Combine the Count_SR_SC and Names_SR_SC into the same sheet and Count_SRFamily_S
 Add the original SP 800-171 data set to the workbook, SP 800-171 Analysis.   
    
 A visual analysis is done with Tableau. 
+    
+    
+#Advanced Data Analysis 
 
+Once the basic overall analysis is over a deeper analysis looking at the relationship with the SP 800-53 and the percentage of them being used within the security requirements.   
+   
+Loading in the 800-53 Security Control Data Set    
+```{r}
+Security_Controls <- read_excel("~/Desktop/GitHub/FedRAMP_800-53_Controls/800-53 subcontrol relations.xlsx")
+head(Security_Controls)
+```
+   
+      
+##Data Cleaning  
 
+```{r}
+`SP_800-53 Cleaned` <- Security_Controls %>%
+  filter(High == "Y") %>% #filtering to High Baseline 
+  #renaming variables so there is no space and selecting the variables wanted
+  select(`SC_Family` = `Family`, 
+         `SC_Family_Name` = `Family Name`, 
+         `Control_Name` = `Control Name`, 
+         `Main_Control` = `Main Control`,
+         `Control_Enhancement_Name` = `Control Enhancement Name`,
+         `Control_Enhancement` = `Control Enhancement`,
+         `Combined` = `Combined`) %>%
+  distinct()
+
+head(`SP_800-53 Cleaned`)
+#View(`SP_800-53 Cleaned`)
+```    
+  
+The data is manipulated in a way to best represent the relationship between the security controls and the security requirements.    
+
+##Data Analysis   
+    
+    
+**Number of Security Control Families for SP 800-53 and their names?**    
+    
+```{r}
+Count_SCFamily <- `SP_800-53 Cleaned` %>%
+  summarise(count_SCFamily = n_distinct(SC_Family))
+
+head(Count_SCFamily)
+
+Names_SCFamily <- `SP_800-53 Cleaned` %>%
+  group_by(SC_Family, SC_Family_Name) %>%
+  summarise()
+
+head(Names_SCFamily)
+```   
+   
+There are 17 Security Control families for SP 800-53.    
+   
+**Number of Security Controls for SP-800-53 (Combined) and their "names"?**    
+    
+```{r}
+Count_SC <- `SP_800-53 Cleaned` %>%
+  summarise(count_SC = n_distinct(`Combined`))
+
+head(Count_SC)
+
+Names_SC <- `SP_800-53 Cleaned` %>%
+  group_by(`Combined`) %>%
+  summarise()
+
+head(Names_SC)
+```   
+   
+There are 415 Security Controls within the 17 Security Control families. These are for FedRAMP High level.    
+   
+**Security Control families with the number of security controls (SP 800-53)?**   
+     
+```{r}
+Count_SCFamily_SC <- `SP_800-53 Cleaned` %>%
+  group_by(SC_Family) %>%
+  summarise(count_of_SP_800_53 = n_distinct(SC_Family, `Combined`)) %>%
+  arrange(desc(count_of_SP_800_53 ))
+
+head(Count_SCFamily_SC)  
+   
+Names_SCFamily_SC <- `SP_800-53 Cleaned` %>%
+  group_by(SC_Family) %>%
+  summarise(names_of_SP_800_53 = toString(`Combined`)) %>%
+  ungroup()
+
+head(Names_SCFamily_SC)
+```       
+   
+The Security Control family with the most Security Controls is AC with 54, followed by SI with 39, SC with 38, CM with 36 and CP with 35.   
+    
+      
+##Exporting Data 
+    
+```{r}
+write_csv(`SP_800-53 Cleaned`, "SP_800-53 Cleaned.csv")
+write_csv(`Names_SCFamily`, "Names_SCFamily.csv")
+write_csv(`Names_SC`, "Names_SC.csv")
+write_csv(`Count_SCFamily_SC`, "Count_SCFamily_SC.csv")
+write_csv(`Names_SCFamily_SC`, "Names_SCFamily_SC.csv")
+``` 
