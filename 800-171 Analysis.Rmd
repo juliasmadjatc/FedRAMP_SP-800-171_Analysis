@@ -322,3 +322,77 @@ write_csv(`Names_SC`, "Names_SC.csv")
 write_csv(`Count_SCFamily_SC`, "Count_SCFamily_SC.csv")
 write_csv(`Names_SCFamily_SC`, "Names_SCFamily_SC.csv")
 ``` 
+
+Once exported, the different data sets are combined into one dataset with multiple different sheets.     
+SC_Family_Name is turned into capitalized letters and the a IF statement, ISERROR and VLOOKUP is created to find the Security Controls that appear in the SP 800-171 and the ones that do not.    
+Visuals are created with Tableau for analysis.    
+    
+#800-171 and 800-53 Comparison  
+  
+```{r}
+`SP_800_171_Analysis` <- read_excel("SP 800-171 Analysis.xlsx")
+`SP_800_53_Analysis_for_SP_800_171` <- read_excel("SP 800-53 Analysis for SP 800-171.xlsx")
+
+head(SP_800_171_Analysis)
+head(SP_800_53_Analysis_for_SP_800_171)
+```
+
+For this analysis, we would want to find the percentage of Security Controls that are within the SP-800-171 and analyze the percentage difference between the two.    
+      
+**Number of Security Control Families in SP 800-53 and the SP 800-171.**
+```{r}
+Count_SCFamily53 <- SP_800_53_Analysis_for_SP_800_171 %>%
+  mutate(total_SCFamily53 = length(unique(SC_Family))) %>%
+  select(total_SCFamily53) %>%
+  distinct()
+
+Count_SCFamily53
+
+Count_SCFamily171 <- SP_800_171_Analysis %>%
+  mutate(total_SCFamily171 = length(unique(`800-53 Family`))) %>%
+  select(total_SCFamily171) %>%
+  distinct()
+
+Count_SCFamily171
+```
+Both, SP 800-53 and SP 800-171 have the same number of Security Control families. This means that SP 800-171 uses the total amount (100%) of possible Security Control family possible.     
+
+  
+**Number of Security Control in SP 800-53 and the SP 800-171.**
+```{r}
+Count_SC53 <- SP_800_53_Analysis_for_SP_800_171 %>%
+  mutate(total_SC53 = length(unique(Combined))) %>%
+  select(total_SC53) %>%
+  distinct()
+
+Count_SC53
+
+Count_SC171 <- SP_800_171_Analysis %>%
+  mutate(total_SC171 = length(unique(`NIST SP 800-53`))) %>%
+  select(total_SC171) %>%
+  distinct()
+
+Count_SC171
+```    
+SP 800-53 has a total of 415 Security Controls, while SP 800-171 has 127 of those 415 Security Controls. This means that 30.6% of the Security Controls are in SP 800-171.     
+   
+    
+**Number of Security Control withing each family in SP 800-53 and the SP 800-171.**
+```{r}
+Count_SCFamily_SC53 <- SP_800_53_Analysis_for_SP_800_171 %>%
+  group_by(SC_Family) %>%
+  mutate(total_SCFamily_SC53 = length(SC_Family)) %>%
+  select(SC_Family, total_SCFamily_SC53) %>%
+  distinct()
+
+Count_SCFamily_SC53
+
+Count_SCFamily_SC171 <- SP_800_171_Analysis %>%
+  group_by(`800-53 Family`) %>%
+  mutate(total_SCFamily_SC171 = length(unique(`NIST SP 800-53`))) %>%
+  select(`800-53 Family`, total_SCFamily_SC171) %>%
+  distinct()
+
+Count_SCFamily_SC171
+```
+
