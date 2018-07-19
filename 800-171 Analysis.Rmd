@@ -201,6 +201,24 @@ The security requirements with the most number of security controls are 3.3.1 wi
 ##Exporting Data 
     
 ```{r}
+#list_of_datasets <- list("SP_800-171 Original" = `Security_Requirements`,
+#                         "SP_800-171 Cleaned" = `SP_800-171 Cleaned`, 
+#                         "Names_SRFamily" = `Names_SRFamily`,
+#                         "Names_SR" = `Names_SR`,
+#                         "Count_SRFamily_SR" = `Count_SRFamily_SR`,
+#                         "Names_SRFamily_SR" = `Names_SRFamily_SR`,
+#                         "Count_SRFamily_SCFamily" = `Count_SRFamily_SCFamily`,
+#                         "Names_SRFamily_SCFamily" = `Names_SRFamily_SCFamily`, 
+#                         "Count_SRFamily_SC" = `Count_SRFamily_SC`, 
+#                         "Names_SRFamily_SC" = `Names_SRFamily_SC`, 
+#                         "Count_SR_SCFamily" = `Count_SR_SCFamily`, 
+#                         "Names_SR_SCFamily" = `Names_SR_SCFamily`, 
+#                         "Count_SR_SC" = `Count_SR_SC`, 
+#                         "Names_SR_SC" = `Names_SR_SC`)
+
+#library(xlsx)
+#write.xlsx(list_of_datasets, "SP 800-171 Analysis.xlsx")
+
 write_csv(`SP_800-171 Cleaned`, "SP_800-171 Cleaned.csv")
 write_csv(`Names_SRFamily`, "Names_SRFamily.csv")
 write_csv(`Names_SR`, "Names_SR.csv")
@@ -343,36 +361,53 @@ For this analysis, we would want to find the percentage of Security Controls tha
 ```{r}
 Count_SCFamily53 <- SP_800_53_Analysis_for_SP_800_171 %>%
   mutate(total_SCFamily53 = length(unique(SC_Family))) %>%
-  select(total_SCFamily53) %>%
+  select(SC_Family, total_SCFamily53) %>%
   distinct()
 
 Count_SCFamily53
 
 Count_SCFamily171 <- SP_800_171_Analysis %>%
   mutate(total_SCFamily171 = length(unique(`800-53 Family`))) %>%
-  select(total_SCFamily171) %>%
-  distinct()
+  select(`800-53 Family`, total_SCFamily171) %>%
+  distinct() %>%
+  rename(`SC_Family` = `800-53 Family`)
 
 Count_SCFamily171
+
+Percentage_SCFamilies <- Count_SCFamily53 %>%
+  left_join(Count_SCFamily171) %>% 
+  mutate(percentage_SCFamilies = total_SCFamily171/total_SCFamily53) %>%
+  select(-SC_Family) %>%
+  distinct()
 ```
 Both, SP 800-53 and SP 800-171 have the same number of Security Control families. This means that SP 800-171 uses the total amount (100%) of possible Security Control family possible.     
 
   
 **Number of Security Control in SP 800-53 and the SP 800-171.**
 ```{r}
+SP_800_53_Analysis_for_SP_800_171
 Count_SC53 <- SP_800_53_Analysis_for_SP_800_171 %>%
   mutate(total_SC53 = length(unique(Combined))) %>%
-  select(total_SC53) %>%
+  select(Combined, total_SC53) %>%
+  rename(`NIST SP 800-53` = `Combined`) %>%
   distinct()
 
 Count_SC53
 
+SP_800_171_Analysis
 Count_SC171 <- SP_800_171_Analysis %>%
   mutate(total_SC171 = length(unique(`NIST SP 800-53`))) %>%
-  select(total_SC171) %>%
+  select(`NIST SP 800-53`, total_SC171) %>%
   distinct()
 
 Count_SC171
+
+Percentage_SC <- Count_SC53 %>%
+  left_join(Count_SC171) %>% 
+  mutate(percentage_SC = total_SC171/total_SC53) %>%
+  select(-`NIST SP 800-53`) %>%
+  distinct() %>%
+  drop_na()
 ```    
 SP 800-53 has a total of 415 Security Controls, while SP 800-171 has 127 of those 415 Security Controls. This means that 30.6% of the Security Controls are in SP 800-171.     
    
@@ -387,12 +422,60 @@ Count_SCFamily_SC53 <- SP_800_53_Analysis_for_SP_800_171 %>%
 
 Count_SCFamily_SC53
 
+SP_800_171_Analysis
 Count_SCFamily_SC171 <- SP_800_171_Analysis %>%
-  group_by(`800-53 Family`) %>%
+  group_by(`SR Family`, `800-53 Family`) %>%
   mutate(total_SCFamily_SC171 = length(unique(`NIST SP 800-53`))) %>%
-  select(`800-53 Family`, total_SCFamily_SC171) %>%
-  distinct()
+  ungroup() %>%
+  group_by(`SR Family`) %>%
+  mutate(total_SRFamily_SC171 = length(unique(`NIST SP 800-53`))) %>%
+  select(`800-53 Family`, total_SRFamily_SC171, total_SCFamily_SC171) %>%
+  distinct() %>%
+  rename(`SC_Family` = `800-53 Family`)
 
 Count_SCFamily_SC171
+
+Percentage_SCFamily_SC <- Count_SCFamily_SC53 %>%
+  left_join(Count_SCFamily_SC171, by = "SC_Family") %>% 
+  mutate(percentage_SCFamily = total_SCFamily_SC171/total_SCFamily_SC53) %>% 
+         #percentage_SRFamily = total_SRFamily_SC171/total_SCFamily_SC53) %>%
+  select(`SR Family`, SC_Family, total_SCFamily_SC53, total_SCFamily_SC171, percentage_SCFamily)
+#total_SRFamily_SC171, percentage_SRFamily,
+
+Percentage_SCFamily_SC 
 ```
 
+**Number of Security Control withing each family in SP 800-53 and the SP 800-171 by Security Requirement Family.**
+```{r}
+#Count_SCFamily_SC53 <- SP_800_53_Analysis_for_SP_800_171 %>%
+#  group_by(SC_Family) %>%
+#  mutate(total_SCFamily_SC53 = length(SC_Family)) %>%
+#  select(SC_Family, total_SCFamily_SC53) %>%
+#  distinct()
+
+#Count_SCFamily_SC53
+
+#SP_800_171_Analysis
+#Count_SCFamily_SC171_SRFamily <- SP_800_171_Analysis %>%
+#  group_by(`SR Family`) %>%
+#  mutate(total_SCFamily_SC171_SRFamily = length(unique(`NIST SP 800-53`))) %>%
+#  select(`800-53 Family`, `SR Family`, total_SCFamily_SC171_SRFamily) %>%
+#  distinct()
+
+#Count_SCFamily_SC171_SRFamily
+
+#Percentage_SCFamily_SC_SRFamily <- Count_SCFamily_SC171_SRFamily %>%
+#  left_join(Count_SCFamily_SC53) %>% 
+#  mutate(percentage_SC = total_SCFamily_SC171_SRFamily/total_SCFamily_SC53)
+
+#Percentage_SCFamily_SC_SRFamily 
+```   
+    
+   
+##Exporting Data 
+    
+```{r}
+write_csv(`Percentage_SCFamilies`, "Percentage_SCFamilies.csv")
+write_csv(`Percentage_SC`, "Percentage_SC.csv")
+write_csv(`Percentage_SCFamily_SC`, "Percentage_SCFamily_SC.csv")
+``` 
